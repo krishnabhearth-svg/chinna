@@ -4,24 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GyM - Grandmother Youth Mentorship</title>
+    <meta name="description" content="World's first pull-only wisdom platform - Intergenerational learning">
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7582671626839217" crossorigin="anonymous"></script>
+    
+    <!-- Google Translate -->
+    <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    
     <style>
-        /* Ultra Minimalist Reset */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Ultra Minimalist Design */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         
         :root {
             --black: #000000;
             --white: #ffffff;
             --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
             --gray-800: #262626;
+            --accent: #4CAF50;
         }
         
         body {
-            font-family: system-ui, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
             background: var(--white);
             color: var(--black);
             overflow: hidden;
             height: 100vh;
             touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
         }
         
         #app {
@@ -30,43 +46,43 @@
             position: relative;
         }
         
-        /* Sections - Pull Based Navigation */
+        /* Sections */
         .section {
             display: none;
             height: 100vh;
             width: 100vw;
-            padding: 2rem;
+            padding: 1rem;
             position: absolute;
             top: 0;
             left: 0;
-            animation: fadeIn 0.6s ease-out;
+            animation: fadeIn 0.5s ease-out;
+            overflow-y: auto;
         }
         
         .section.active {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            text-align: center;
         }
         
-        /* Revolutionary Pull Interface */
-        .pull-ecosystem {
+        /* Navigation */
+        .nav-ecosystem {
             position: fixed;
-            bottom: 2rem;
-            right: 2rem;
+            bottom: 1rem;
+            right: 1rem;
             z-index: 1000;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1rem;
+            gap: 0.8rem;
         }
         
-        .pull-btn {
-            width: 5rem;
-            height: 5rem;
+        .nav-btn {
+            width: 4rem;
+            height: 4rem;
             border-radius: 50%;
             background: var(--black);
-            border: none;
+            border: 2px solid var(--black);
             color: var(--white);
             cursor: pointer;
             display: flex;
@@ -74,166 +90,367 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
+            font-size: 0.7rem;
             font-weight: 600;
-            font-size: 0.8rem;
         }
         
-        .pull-btn:active {
-            transform: scale(0.92);
+        .nav-btn:active {
+            transform: scale(0.9);
             background: var(--white);
             color: var(--black);
-            border: 2px solid var(--black);
+        }
+        
+        .back-btn {
+            background: var(--gray-100);
+            border-color: var(--gray-800);
         }
         
         /* Content Cards */
-        .wisdom-card {
+        .card {
             background: var(--white);
-            border: 1px solid var(--gray-50);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            margin: 1rem 0;
+            border: 1px solid var(--gray-100);
+            border-radius: 0.8rem;
+            padding: 1.2rem;
+            margin: 0.8rem 0;
             transition: all 0.3s ease;
         }
         
-        .wisdom-card:active {
+        .card:active {
             border-color: var(--black);
             transform: translateY(-2px);
         }
         
         /* Typography */
-        .responsive-heading {
-            font-size: clamp(2rem, 8vw, 3rem);
+        .heading {
+            font-size: clamp(1.8rem, 6vw, 2.5rem);
             font-weight: 700;
             line-height: 1.2;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
         }
         
-        .responsive-text {
-            font-size: clamp(1rem, 4vw, 1.2rem);
-            line-height: 1.6;
+        .text {
+            font-size: clamp(0.9rem, 3vw, 1rem);
+            line-height: 1.5;
             color: var(--gray-800);
+            text-align: center;
         }
         
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Progress Dots */
+        /* Progress */
         .progress-dots {
             display: flex;
             justify-content: center;
             gap: 0.5rem;
-            margin: 2rem 0;
+            margin: 1.5rem 0;
         }
         
         .progress-dot {
-            width: 0.5rem;
-            height: 0.5rem;
+            width: 0.4rem;
+            height: 0.4rem;
             border-radius: 50%;
-            background: var(--gray-50);
+            background: var(--gray-100);
             border: 1px solid var(--gray-800);
             transition: all 0.3s ease;
         }
         
         .progress-dot.active {
             background: var(--black);
-            transform: scale(1.3);
+            transform: scale(1.2);
+        }
+        
+        /* Language Selector */
+        .language-bar {
+            position: fixed;
+            top: 0.5rem;
+            left: 0.5rem;
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            max-width: 60%;
+        }
+        
+        .lang-btn {
+            padding: 0.3rem 0.6rem;
+            border: 1px solid var(--black);
+            background: var(--white);
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        
+        .lang-btn.active {
+            background: var(--black);
+            color: var(--white);
         }
         
         /* Energy Saver */
         .energy-saver {
             position: fixed;
-            top: 1rem;
-            left: 1rem;
+            top: 0.5rem;
+            right: 0.5rem;
             background: var(--white);
-            border: 1px solid var(--gray-50);
-            padding: 0.5rem 1rem;
+            border: 1px solid var(--gray-100);
+            padding: 0.4rem 0.8rem;
             border-radius: 1rem;
             font-size: 0.7rem;
         }
+        
+        /* Ad Container */
+        .ad-container {
+            margin: 1rem auto;
+            text-align: center;
+            max-width: 300px;
+        }
+        
+        /* Marketplaces Grid */
+        .marketplace-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Dark Mode */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: var(--black);
+                color: var(--white);
+            }
+            
+            .card {
+                background: var(--gray-800);
+                border-color: var(--gray-800);
+            }
+            
+            .nav-btn {
+                background: var(--white);
+                color: var(--black);
+            }
+            
+            .nav-btn:active {
+                background: var(--black);
+                color: var(--white);
+            }
+            
+            .lang-btn {
+                background: var(--gray-800);
+                color: var(--white);
+            }
+            
+            .energy-saver {
+                background: var(--gray-800);
+                color: var(--white);
+            }
+        }
     </style>
 </head>
+
 <body>
     <div id="app">
-        <!-- Energy Saver Display -->
-        <div class="energy-saver">
-            ⚡ <span id="energyPercent">95%</span> energy saved
+        <!-- Language Selector -->
+        <div class="language-bar" id="languageBar">
+            <!-- Languages will be added by JavaScript -->
         </div>
-        
-        <!-- Pull Navigation -->
-        <div class="pull-ecosystem">
-            <button class="pull-btn" onclick="pullNextWisdom()">
-                <div style="font-size: 1.2rem;">⬇</div>
+
+        <!-- Energy Saver -->
+        <div class="energy-saver">
+            ⚡ <span id="energyPercent">95%</span>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-ecosystem">
+            <button class="nav-btn back-btn" onclick="goBack()">
+                <div style="font-size: 1rem;">←</div>
+                <div>BACK</div>
+            </button>
+            <button class="nav-btn" onclick="pullNextWisdom()">
+                <div style="font-size: 1.1rem;">↓</div>
                 <div>PULL</div>
             </button>
         </div>
-        
-        <!-- Progress Indicators -->
+
+        <!-- Progress -->
         <div class="progress-dots" id="progressDots"></div>
-        
+
         <!-- Sections -->
         <section id="welcome" class="section active">
             <div>
-                <h1 class="responsive-heading">GyM Wisdom</h1>
-                <p class="responsive-text">Grandmother Youth Mentorship<br>Pull to discover timeless wisdom</p>
+                <h1 class="heading">GyM Wisdom</h1>
+                <p class="text">Grandmother Youth Mentorship<br>Pull to discover timeless wisdom</p>
                 
-                <div style="margin: 2rem 0;">
-                    <div class="wisdom-card" onclick="showSection(1)">
-                        <h3 style="margin-bottom: 0.5rem;">Begin Journey</h3>
-                        <p class="responsive-text">Touch to start learning</p>
+                <div class="marketplace-grid">
+                    <div class="card" onclick="showSection(1)">
+                        <div style="font-size: 1.5rem; text-align: center;">🌱</div>
+                        <p class="text">Beej Framework</p>
                     </div>
+                    <div class="card" onclick="showSection(2)">
+                        <div style="font-size: 1.5rem; text-align: center;">🏪</div>
+                        <p class="text">Marketplaces</p>
+                    </div>
+                    <div class="card" onclick="showSection(3)">
+                        <div style="font-size: 1.5rem; text-align: center;">💝</div>
+                        <p class="text">Contribute</p>
+                    </div>
+                    <div class="card" onclick="showSection(4)">
+                        <div style="font-size: 1.5rem; text-align: center;">📚</div>
+                        <p class="text">AI+ Book</p>
+                    </div>
+                </div>
+
+                <!-- Ad Container -->
+                <div class="ad-container">
+                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-7582671626839217"
+                         data-ad-slot="1234567890"
+                         data-ad-format="auto"></ins>
+                    <script>
+                         (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
                 </div>
             </div>
         </section>
-        
+
         <section id="beej" class="section">
             <div>
-                <h2 class="responsive-heading">Beej Framework</h2>
-                <p class="responsive-text">Seed • Nourish • Grow • Transform</p>
+                <h2 class="heading">Beej Framework</h2>
+                <p class="text">Seed • Nourish • Grow • Transform</p>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 2rem 0;">
-                    <div class="wisdom-card" onclick="exploreConcept('seed')">
-                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🌱</div>
-                        <h4>Seed</h4>
+                <div class="marketplace-grid">
+                    <div class="card" onclick="exploreConcept('beej')">
+                        <div style="font-size: 1.5rem; text-align: center;">🌱</div>
+                        <p class="text">Beej (Seed)</p>
                     </div>
-                    <div class="wisdom-card" onclick="exploreConcept('grow')">
-                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🌿</div>
-                        <h4>Grow</h4>
+                    <div class="card" onclick="exploreConcept('bhojy')">
+                        <div style="font-size: 1.5rem; text-align: center;">🍚</div>
+                        <p class="text">Bhojy (Nourish)</p>
+                    </div>
+                    <div class="card" onclick="exploreConcept('bhaji')">
+                        <div style="font-size: 1.5rem; text-align: center;">🏪</div>
+                        <p class="text">Bhaji (Marketplace)</p>
+                    </div>
+                    <div class="card" onclick="exploreConcept('bazi')">
+                        <div style="font-size: 1.5rem; text-align: center;">🎯</div>
+                        <p class="text">Bazi (Outcome)</p>
                     </div>
                 </div>
             </div>
         </section>
-        
+
+        <section id="marketplaces" class="section">
+            <div>
+                <h2 class="heading">35+ Marketplaces</h2>
+                <p class="text">Explore human exchange systems</p>
+                
+                <div class="marketplace-grid">
+                    <div class="card" onclick="exploreMarketplace('attention')">
+                        <p class="text">Attention</p>
+                    </div>
+                    <div class="card" onclick="exploreMarketplace('intimacy')">
+                        <p class="text">Intimacy</p>
+                    </div>
+                    <div class="card" onclick="exploreMarketplace('belief')">
+                        <p class="text">Belief</p>
+                    </div>
+                    <div class="card" onclick="exploreMarketplace('time')">
+                        <p class="text">Time</p>
+                    </div>
+                    <div class="card" onclick="exploreMarketplace('memory')">
+                        <p class="text">Memory</p>
+                    </div>
+                    <div class="card" onclick="exploreMarketplace('love')">
+                        <p class="text">Love</p>
+                    </div>
+                </div>
+                
+                <div class="card" style="text-align: center; margin-top: 1rem;">
+                    <p class="text">+29 more marketplaces to explore</p>
+                </div>
+            </div>
+        </section>
+
         <section id="contribute" class="section">
             <div>
-                <h2 class="responsive-heading">Your Wisdom</h2>
-                <p class="responsive-text">Share your insight in 2-3 words</p>
+                <h2 class="heading">Share Wisdom</h2>
+                <p class="text">Contribute 2-3 words of deep insight</p>
                 
-                <div style="margin: 2rem 0;">
-                    <input type="text" id="wisdomInput" placeholder="Share wisdom..." 
-                           style="width: 100%; padding: 1rem; border: 1px solid #ddd; border-radius: 0.5rem; font-size: 1rem;"
-                           maxlength="30">
+                <div class="card">
+                    <input type="text" id="wisdomInput" placeholder="Your wisdom..." 
+                           maxlength="30"
+                           style="width: 100%; padding: 0.8rem; border: 1px solid var(--gray-100); border-radius: 0.5rem; font-size: 1rem;">
                     <button onclick="shareWisdom()" 
-                            style="width: 100%; background: black; color: white; border: none; padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; font-size: 1rem;">
-                        Share Insight
+                            style="width: 100%; background: var(--black); color: var(--white); border: none; padding: 0.8rem; border-radius: 0.5rem; margin-top: 0.8rem; font-size: 1rem;">
+                        Share
                     </button>
+                </div>
+                
+                <div class="card">
+                    <p class="text">Join GitHub to contribute code, translations, and ideas</p>
+                    <button onclick="openGitHub()" 
+                            style="width: 100%; background: var(--accent); color: var(--white); border: none; padding: 0.8rem; border-radius: 0.5rem; margin-top: 0.5rem; font-size: 1rem;">
+                        GitHub
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="book" class="section">
+            <div>
+                <h2 class="heading">AI+ Book</h2>
+                <p class="text">The River & The Algorithm</p>
+                
+                <div class="card" onclick="showChapter(1)">
+                    <p class="text">Chapter 1: Box Office of the Soul</p>
+                </div>
+                <div class="card" onclick="showChapter(2)">
+                    <p class="text">Chapter 2: Beej of Anxiety</p>
+                </div>
+                <div class="card" onclick="showChapter(3)">
+                    <p class="text">Chapter 3: Exchange Rate of Intimacy</p>
+                </div>
+                
+                <div class="card" style="text-align: center;">
+                    <p class="text">Interactive AI+ Book with 7 Chapters</p>
                 </div>
             </div>
         </section>
     </div>
 
     <script>
-        // Core Navigation System
-        const sections = ['welcome', 'beej', 'contribute'];
-        let currentSection = 0;
+        // Core Configuration
+        const sections = ['welcome', 'beej', 'marketplaces', 'contribute', 'book'];
+        const languages = [
+            {code: 'en', name: 'English'},
+            {code: 'hi', name: 'हिन्दी'},
+            {code: 'ta', name: 'தமிழ்'},
+            {code: 'te', name: 'తెలుగు'},
+            {code: 'kn', name: 'ಕನ್ನಡ'},
+            {code: 'ml', name: 'മലയാളം'},
+            {code: 'bn', name: 'বাংলা'},
+            {code: 'mr', name: 'मराठी'}
+        ];
         
+        let currentSection = 0;
+        let sectionHistory = [0];
+        let currentLanguage = 'en';
+
+        // Initialize App
         function initializeApp() {
             createProgressDots();
+            createLanguageButtons();
             showSection(0);
+            setupGestures();
+            initializeGoogleTranslate();
         }
-        
+
+        // Progress System
         function createProgressDots() {
             const container = document.getElementById('progressDots');
             sections.forEach((_, index) => {
@@ -243,8 +460,41 @@
                 container.appendChild(dot);
             });
         }
-        
+
+        // Language System
+        function createLanguageButtons() {
+            const container = document.getElementById('languageBar');
+            languages.forEach(lang => {
+                const btn = document.createElement('button');
+                btn.className = 'lang-btn';
+                btn.textContent = lang.name;
+                btn.onclick = () => changeLanguage(lang.code);
+                container.appendChild(btn);
+            });
+        }
+
+        function changeLanguage(langCode) {
+            currentLanguage = langCode;
+            // Update active language button
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // In a real implementation, this would update all text content
+            showTranslationMessage();
+        }
+
+        function showTranslationMessage() {
+            alert(`Language changed to ${languages.find(l => l.code === currentLanguage).name}. Full translation would be implemented with Google Translate API.`);
+        }
+
+        // Navigation System
         function showSection(index) {
+            if (index !== currentSection) {
+                sectionHistory.push(index);
+            }
+            
             currentSection = index;
             
             // Hide all sections
@@ -255,36 +505,65 @@
             // Show current section
             document.getElementById(sections[index]).classList.add('active');
             
-            // Update progress dots
             updateProgressDots();
-            
-            // Update energy savings
             updateEnergySavings();
         }
-        
+
+        function goBack() {
+            if (sectionHistory.length > 1) {
+                sectionHistory.pop();
+                const previousIndex = sectionHistory[sectionHistory.length - 1];
+                showSection(previousIndex);
+            }
+        }
+
+        function pullNextWisdom() {
+            const nextSection = (currentSection + 1) % sections.length;
+            showSection(nextSection);
+            provideHapticFeedback();
+        }
+
         function updateProgressDots() {
             const dots = document.querySelectorAll('.progress-dot');
             dots.forEach((dot, index) => {
                 dot.classList.toggle('active', index === currentSection);
             });
         }
-        
+
         function updateEnergySavings() {
             const loadedFraction = (currentSection + 1) / sections.length;
             const energySaved = 100 - (loadedFraction * 100);
             document.getElementById('energyPercent').textContent = Math.round(energySaved) + '%';
         }
-        
-        function pullNextWisdom() {
-            const nextSection = (currentSection + 1) % sections.length;
-            showSection(nextSection);
+
+        function provideHapticFeedback() {
+            // Visual feedback
+            const btn = document.querySelector('.nav-btn:not(.back-btn)');
+            btn.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                btn.style.transform = 'scale(1)';
+            }, 150);
+            
+            // Haptic feedback
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
         }
-        
+
+        // Content Exploration
         function exploreConcept(concept) {
-            // For future expansion
-            alert(`Exploring ${concept} - This will open detailed learning`);
+            alert(`Exploring ${concept} concept - Deep dive would open here`);
         }
-        
+
+        function exploreMarketplace(marketplace) {
+            alert(`Opening ${marketplace} marketplace exploration`);
+        }
+
+        function showChapter(chapter) {
+            alert(`Opening Chapter ${chapter} of AI+ Book`);
+        }
+
+        // Contribution System
         function shareWisdom() {
             const input = document.getElementById('wisdomInput');
             const wisdom = input.value.trim();
@@ -292,31 +571,69 @@
             if (wisdom.length > 0 && wisdom.split(' ').length <= 3) {
                 alert(`Thank you for sharing: "${wisdom}" - This wisdom will be added to our collective learning`);
                 input.value = '';
+                
+                // In real implementation, this would save to database
+                console.log('Wisdom shared:', wisdom);
             } else {
                 alert('Please share 1-3 words of deep wisdom');
             }
         }
-        
-        // Touch gesture support
-        let touchStartY = 0;
-        document.addEventListener('touchstart', (e) => {
-            touchStartY = e.touches[0].clientY;
-        });
-        
-        document.addEventListener('touchend', (e) => {
-            const touchEndY = e.changedTouches[0].clientY;
-            const diffY = touchStartY - touchEndY;
+
+        function openGitHub() {
+            window.open('https://github.com/krishnaheda/ba-ej', '_blank');
+        }
+
+        // Google Translate
+        function initializeGoogleTranslate() {
+            // Google Translate would be initialized here
+            console.log('Google Translate ready for integration');
+        }
+
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,hi,ta,te,kn,ml,bn,mr',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+        }
+
+        // Gesture Support
+        function setupGestures() {
+            let touchStartY = 0;
             
-            if (Math.abs(diffY) > 50) {
-                if (diffY > 0) {
-                    pullNextWisdom();
-                } else {
-                    const prevSection = (currentSection - 1 + sections.length) % sections.length;
-                    showSection(prevSection);
+            document.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+            });
+            
+            document.addEventListener('touchend', (e) => {
+                const touchEndY = e.changedTouches[0].clientY;
+                const diffY = touchStartY - touchEndY;
+                
+                if (Math.abs(diffY) > 50) {
+                    if (diffY > 0) {
+                        pullNextWisdom();
+                    } else {
+                        goBack();
+                    }
                 }
-            }
-        });
-        
+            });
+            
+            // Keyboard support
+            document.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case 'ArrowDown':
+                    case ' ':
+                        e.preventDefault();
+                        pullNextWisdom();
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        goBack();
+                        break;
+                }
+            });
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
