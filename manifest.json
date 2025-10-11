@@ -1,0 +1,10 @@
+{
+  "name": "BA-EJ: Pull Wisdom",
+  "short_name": "BA-EJ",
+  "description": "A grandmother-first, pull-based AI+ book for liberation.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": []
+}
