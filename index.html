@@ -1,80 +1,263 @@
-<!DOCTYPE html>
+package main
+
+import (
+    "embed"
+    "encoding/json"
+    "fmt"
+    "html/template"
+    "io"
+    "log"
+    "net/http"
+    "strings"
+)
+
+// Embed all content files into the binary
+//go:embed templates/* patches/*
+var content embed.FS
+
+// Core consciousness state
+type Consciousness struct {
+    Current  string   `json:"current"`
+    History  []string `json:"history"`
+    Pulls    int      `json:"pulls"`
+    Level    int      `json:"level"`
+}
+
+type Patch struct {
+    Name    string
+    Content string
+    Actions []Action
+}
+
+type Action struct {
+    Text   string
+    Target string
+    Icon   string
+}
+
+// Main orchestrator
+func main() {
+    http.HandleFunc("/", handleRoot)
+    http.HandleFunc("/pull", handlePull)
+    http.HandleFunc("/patch/", handlePatch)
+    http.HandleFunc("/api/state", handleState)
+    
+    fmt.Println("🌱 BA-EJ awakening on :8080")
+    log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+// Root handler - serves the single HTML page
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+    tmpl := `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BA-EJ • Pull Wisdom</title>
-  <meta name="description" content="A pull-based, grandmother-first, AI+ interactive book for liberation and wisdom.">
-  <link rel="manifest" href="manifest.json">
-  <style>
-    /* Minimal CSS — inline for speed */
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #fff; color: #000;
-      height: 100vh; width: 100vw;
-      overflow: hidden;
-      display: flex; flex-direction: column;
-    }
-    #app {
-      flex: 1; padding: 2rem; overflow-y: auto;
-      display: flex; flex-direction: column; justify-content: center;
-      text-align: center;
-    }
-    h1 { font-size: clamp(2rem, 6vw, 3.5rem); margin-bottom: 1.5rem; }
-    p { font-size: clamp(1rem, 3vw, 1.25rem); line-height: 1.6; max-width: 600px; margin: 0 auto; }
-    .nav { position: fixed; bottom: 2rem; right: 2rem; display: flex; gap: 1rem; }
-    .btn {
-      width: 70px; height: 70px; border-radius: 50%;
-      border: none; background: #000; color: #fff;
-      font-size: 1.4rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .aux { position: fixed; top: 1.5rem; right: 1.5rem; display: flex; gap: 0.8rem; }
-    .aux-btn {
-      width: 44px; height: 44px; border-radius: 50%;
-      border: 2px solid #000; background: #fff;
-      font-size: 1.2rem; cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BA-EJ • Pull Wisdom</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: system-ui; 
+            background: #000; 
+            color: #fff; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        #app { 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 2rem; 
+        }
+        .patch { max-width: 800px; opacity: 0; animation: fadeIn 0.3s forwards; }
+        @keyframes fadeIn { to { opacity: 1; } }
+        .actions { 
+            position: fixed; 
+            bottom: 2rem; 
+            right: 2rem; 
+            display: flex; 
+            gap: 1rem; 
+        }
+        button { 
+            padding: 1rem 2rem; 
+            font-size: 1.2rem; 
+            background: #fff; 
+            color: #000; 
+            border: none; 
+            border-radius: 50px; 
+            cursor: pointer; 
+        }
+        button:active { transform: scale(0.95); }
+        h1 { font-size: 3rem; margin-bottom: 2rem; }
+        p { font-size: 1.2rem; line-height: 1.8; margin-bottom: 1rem; }
+    </style>
 </head>
 <body>
-  <div id="app">
-    <h1>🌱 Pull Wisdom</h1>
-    <p>Welcome to BA-EJ — the living book that grows with you. Press <strong>PULL</strong> to begin your journey.</p>
-    <p>Designed for grandmothers. Built for all.</p>
-  </div>
-
-  <div class="nav">
-    <button id="back-btn" class="btn" title="Back">❮</button>
-    <button id="pull-btn" class="btn" title="Pull Next">⬇</button>
-  </div>
-
-  <div class="aux">
-    <button class="aux-btn" title="Grandmother Mode">👵</button>
-    <button class="aux-btn" title="Language">🌐</button>
-    <a href="https://github.com/krishnabhearth-svg/ba-ej" target="_blank" class="aux-btn" title="Contribute">🐙</a>
-  </div>
-
-  <script>
-    // Ultra-minimal Pull Engine (v0.1)
-    let currentPatch = 'welcome';
-    const history = ['welcome'];
-
-    document.getElementById('pull-btn').onclick = () => {
-      alert('✨ Pulling next wisdom... (Full engine coming soon!)');
-      // Later: loadPatch('next')
-    };
-    document.getElementById('back-btn').onclick = () => {
-      if (history.length > 1) {
-        history.pop();
-        alert('↩️ Going back...');
-      }
-    };
-  </script>
-
-  <script src="scripts/pullEngine.js" defer></script>
-
+    <div id="app">
+        <div class="patch">
+            <h1>🌱 Welcome to BA-EJ</h1>
+            <p>Press PULL to begin your journey of conscious exploration.</p>
+        </div>
+        <div class="actions">
+            <button onclick="pull()">⬇ PULL</button>
+        </div>
+    </div>
+    <script>
+        let state = { current: 'welcome', history: [], pulls: 0 };
+        
+        async function pull() {
+            state.pulls++;
+            const response = await fetch('/pull', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(state)
+            });
+            const data = await response.json();
+            render(data);
+        }
+        
+        function render(patch) {
+            const app = document.getElementById('app');
+            app.style.opacity = '0';
+            setTimeout(() => {
+                app.innerHTML = patch.html;
+                app.style.opacity = '1';
+            }, 200);
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ') { e.preventDefault(); pull(); }
+        });
+    </script>
 </body>
-</html>
+</html>`
+    
+    w.Header().Set("Content-Type", "text/html")
+    w.Write([]byte(tmpl))
+}
+
+// Handle pull request - AI decides what's next
+func handlePull(w http.ResponseWriter, r *http.Request) {
+    var state Consciousness
+    json.NewDecoder(r.Body).Decode(&state)
+    
+    // AI decision logic (simplified)
+    next := decideNext(state)
+    patch := fetchPatch(next)
+    
+    // Update state
+    state.History = append(state.History, state.Current)
+    state.Current = next
+    
+    response := map[string]interface{}{
+        "html":  renderPatch(patch),
+        "state": state,
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
+}
+
+// AI decides next patch based on user state
+func decideNext(state Consciousness) string {
+    sequence := []string{"welcome", "framework", "marketplace-attention", "gym"}
+    
+    // Find current position
+    currentIdx := 0
+    for i, s := range sequence {
+        if s == state.Current {
+            currentIdx = i
+            break
+        }
+    }
+    
+    // Return next in sequence
+    return sequence[(currentIdx+1)%len(sequence)]
+}
+
+// Fetch patch content from embedded files or GitHub
+func fetchPatch(name string) Patch {
+    // Try embedded first
+    content, err := content.ReadFile(fmt.Sprintf("patches/%s.md", name))
+    if err != nil {
+        // Fallback: fetch from GitHub
+        content = fetchFromGitHub(name)
+    }
+    
+    return Patch{
+        Name:    name,
+        Content: string(content),
+        Actions: generateActions(name),
+    }
+}
+
+// Fetch from GitHub if not embedded
+func fetchFromGitHub(name string) []byte {
+    url := fmt.Sprintf("https://raw.githubusercontent.com/krishnabhearth-svg/chinna/wiki/%s.md", name)
+    resp, err := http.Get(url)
+    if err != nil {
+        return []byte(fmt.Sprintf("# %s\n\nThis wisdom is still germinating.", name))
+    }
+    defer resp.Body.Close()
+    
+    content, _ := io.ReadAll(resp.Body)
+    return content
+}
+
+// Generate contextual actions
+func generateActions(patch string) []Action {
+    actions := []Action{
+        {Text: "PULL", Target: "next", Icon: "⬇"},
+    }
+    
+    if patch == "welcome" {
+        actions = append(actions, Action{
+            Text: "Learn Framework", 
+            Target: "framework", 
+            Icon: "🌱",
+        })
+    }
+    
+    return actions
+}
+
+// Render patch as HTML
+func renderPatch(patch Patch) string {
+    // Minimal markdown to HTML
+    html := strings.ReplaceAll(patch.Content, "\n\n", "</p><p>")
+    html = strings.ReplaceAll(html, "# ", "<h1>")
+    html = strings.ReplaceAll(html, "\n", "</h1>")
+    
+    // Add actions
+    actionsHTML := "<div class='actions'>"
+    for _, action := range patch.Actions {
+        actionsHTML += fmt.Sprintf(
+            "<button onclick='pull()'>%s %s</button>", 
+            action.Icon, 
+            action.Text,
+        )
+    }
+    actionsHTML += "</div>"
+    
+    return fmt.Sprintf("<div class='patch'><p>%s</p></div>%s", html, actionsHTML)
+}
+
+// Handle state requests
+func handleState(w http.ResponseWriter, r *http.Request) {
+    // Return current state for client sync
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{
+        "status": "conscious",
+    })
+}
+
+// Handle specific patch requests
+func handlePatch(w http.ResponseWriter, r *http.Request) {
+    name := strings.TrimPrefix(r.URL.Path, "/patch/")
+    patch := fetchPatch(name)
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(patch)
+}
