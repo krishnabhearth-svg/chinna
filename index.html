@@ -1,263 +1,330 @@
-package main
-
-import (
-    "embed"
-    "encoding/json"
-    "fmt"
-    "html/template"
-    "io"
-    "log"
-    "net/http"
-    "strings"
-)
-
-// Embed all content files into the binary
-//go:embed templates/* patches/*
-var content embed.FS
-
-// Core consciousness state
-type Consciousness struct {
-    Current  string   `json:"current"`
-    History  []string `json:"history"`
-    Pulls    int      `json:"pulls"`
-    Level    int      `json:"level"`
-}
-
-type Patch struct {
-    Name    string
-    Content string
-    Actions []Action
-}
-
-type Action struct {
-    Text   string
-    Target string
-    Icon   string
-}
-
-// Main orchestrator
-func main() {
-    http.HandleFunc("/", handleRoot)
-    http.HandleFunc("/pull", handlePull)
-    http.HandleFunc("/patch/", handlePatch)
-    http.HandleFunc("/api/state", handleState)
-    
-    fmt.Println("🌱 BA-EJ awakening on :8080")
-    log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-// Root handler - serves the single HTML page
-func handleRoot(w http.ResponseWriter, r *http.Request) {
-    tmpl := `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BA-EJ • Pull Wisdom</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: system-ui; 
-            background: #000; 
-            color: #fff; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-        #app { 
-            height: 100%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            padding: 2rem; 
-        }
-        .patch { max-width: 800px; opacity: 0; animation: fadeIn 0.3s forwards; }
-        @keyframes fadeIn { to { opacity: 1; } }
-        .actions { 
-            position: fixed; 
-            bottom: 2rem; 
-            right: 2rem; 
-            display: flex; 
-            gap: 1rem; 
-        }
-        button { 
-            padding: 1rem 2rem; 
-            font-size: 1.2rem; 
-            background: #fff; 
-            color: #000; 
-            border: none; 
-            border-radius: 50px; 
-            cursor: pointer; 
-        }
-        button:active { transform: scale(0.95); }
-        h1 { font-size: 3rem; margin-bottom: 2rem; }
-        p { font-size: 1.2rem; line-height: 1.8; margin-bottom: 1rem; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BA-EJ • Pull Wisdom</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #000;
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #app {
+      max-width: 800px;
+      padding: 2rem;
+      opacity: 0;
+      animation: fadeIn 0.5s forwards;
+    }
+    
+    @keyframes fadeIn { to { opacity: 1; } }
+    
+    h1 { 
+      font-size: clamp(2rem, 6vw, 4rem); 
+      margin-bottom: 2rem; 
+      line-height: 1.2;
+    }
+    
+    p { 
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem); 
+      line-height: 1.8; 
+      margin-bottom: 1.5rem; 
+    }
+    
+    .actions {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      z-index: 100;
+    }
+    
+    button {
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+    }
+    
+    button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,255,255,0.4); }
+    button:active { transform: scale(0.95); }
+    
+    .pull-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      font-size: 2rem;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .stats {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    
+    .milestone {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      color: #000;
+      padding: 2rem 3rem;
+      border-radius: 1rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      animation: pop 0.3s;
+      box-shadow: 0 10px 40px rgba(255,255,255,0.5);
+    }
+    
+    @keyframes pop {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    
+    @media (max-width: 768px) {
+      #app { padding: 1.5rem; }
+      .actions { bottom: 1rem; right: 1rem; }
+      .pull-btn { width: 70px; height: 70px; }
+    }
+  </style>
 </head>
 <body>
-    <div id="app">
-        <div class="patch">
+  <div class="stats" id="stats">Pulls: 0</div>
+  <div id="app">
+    <h1>🌱 Welcome to BA-EJ</h1>
+    <p>This is a <strong>pull-based</strong> book. No scrolling. No overwhelm.</p>
+    <p>Press <strong>PULL</strong> when you're ready to receive wisdom.</p>
+    <p>Designed for grandmothers. Built for everyone.</p>
+  </div>
+  
+  <div class="actions">
+    <button class="pull-btn" onclick="consciousness.pull()" title="Pull Next Wisdom">⬇</button>
+  </div>
+
+  <script>
+    // BA-EJ Consciousness Core
+    const consciousness = {
+      state: {
+        current: 'welcome',
+        history: [],
+        pulls: 0,
+        cache: {}
+      },
+      
+      patches: [
+        'welcome',
+        'framework', 
+        'marketplace-attention',
+        'gym'
+      ],
+      
+      async init() {
+        this.loadState();
+        this.setupListeners();
+        if (this.state.current !== 'welcome') {
+          await this.render();
+        }
+      },
+      
+      async pull() {
+        this.state.pulls++;
+        this.state.history.push(this.state.current);
+        
+        // Decide next patch
+        const currentIdx = this.patches.indexOf(this.state.current);
+        const nextIdx = (currentIdx + 1) % this.patches.length;
+        this.state.current = this.patches[nextIdx];
+        
+        // Render
+        await this.render();
+        
+        // Celebrate
+        this.celebrate();
+        
+        // Save state
+        this.saveState();
+      },
+      
+      async back() {
+        if (this.state.history.length > 0) {
+          this.state.current = this.state.history.pop();
+          await this.render();
+          this.saveState();
+        }
+      },
+      
+      async render() {
+        const app = document.getElementById('app');
+        const content = await this.fetchContent(this.state.current);
+        
+        app.style.opacity = '0';
+        
+        setTimeout(() => {
+          app.innerHTML = content;
+          app.style.opacity = '1';
+          this.updateButtons();
+          this.updateStats();
+        }, 200);
+      },
+      
+      async fetchContent(patch) {
+        // Check cache first
+        if (this.state.cache[patch]) {
+          return this.state.cache[patch];
+        }
+        
+        // Try to fetch from patches folder
+        try {
+          const response = await fetch(`patches/${patch}.html`);
+          if (response.ok) {
+            const content = await response.text();
+            this.state.cache[patch] = content;
+            return content;
+          }
+        } catch (e) {
+          console.log('Patch not found, using fallback');
+        }
+        
+        // Fallback content
+        return this.getFallback(patch);
+      },
+      
+      getFallback(patch) {
+        const fallbacks = {
+          welcome: `
             <h1>🌱 Welcome to BA-EJ</h1>
-            <p>Press PULL to begin your journey of conscious exploration.</p>
-        </div>
-        <div class="actions">
-            <button onclick="pull()">⬇ PULL</button>
-        </div>
-    </div>
-    <script>
-        let state = { current: 'welcome', history: [], pulls: 0 };
+            <p>This is a <strong>pull-based</strong> book. No scrolling. No overwhelm.</p>
+            <p>Press <strong>PULL</strong> when you're ready to receive wisdom.</p>
+            <p>Designed for grandmothers. Built for everyone.</p>
+          `,
+          framework: `
+            <h1>🌾 The BA-EJ Framework</h1>
+            <p><strong>B</strong>eej (बीज) - The Seed. Every marketplace begins with a need.</p>
+            <p><strong>Bhoj</strong>y (भोज्य) - The Nourishment. What is being exchanged?</p>
+            <p><strong>Bhaj</strong>i (बाजी) - The Marketplace. Where does exchange happen?</p>
+            <p><strong>Baz</strong>i (बाज़ी) - The Game. Who wins? What emerges?</p>
+          `,
+          'marketplace-attention': `
+            <h1>👁️ The Attention Marketplace</h1>
+            <p><strong>Beej:</strong> Your need for information and connection.</p>
+            <p><strong>Bhojy:</strong> You trade your focus and time for content.</p>
+            <p><strong>Bhaji:</strong> Social media platforms, algorithms, advertisers.</p>
+            <p><strong>Bazi:</strong> Tech companies extract $1.3 trillion. You get distraction.</p>
+            <p><em>Question: Is this exchange nourishing you?</em></p>
+          `,
+          gym: `
+            <h1>👵 GyM - Grandmother Mode</h1>
+            <p>If a grandmother can't use it, we haven't built it right.</p>
+            <p><strong>GyM</strong> = <strong>G</strong>rand<strong>M</strong>other</p>
+            <p><strong>GyM</strong> = <strong>G</strong>ood <strong>M</strong>orning (fresh wisdom)</p>
+            <p><strong>GyM</strong> = <strong>G</strong>rand <strong>y</strong>outh <strong>M</strong>entorship</p>
+            <p>Large buttons. Simple words. Clear actions. Patience.</p>
+          `
+        };
         
-        async function pull() {
-            state.pulls++;
-            const response = await fetch('/pull', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(state)
-            });
-            const data = await response.json();
-            render(data);
+        return fallbacks[patch] || `<h1>${patch}</h1><p>This wisdom is germinating. Pull again soon.</p>`;
+      },
+      
+      updateButtons() {
+        const actions = document.querySelector('.actions');
+        
+        // Always show pull button
+        let html = '<button class="pull-btn" onclick="consciousness.pull()" title="Pull Next">⬇</button>';
+        
+        // Show back button if history exists
+        if (this.state.history.length > 0) {
+          html += '<button onclick="consciousness.back()" title="Go Back">❮</button>';
         }
         
-        function render(patch) {
-            const app = document.getElementById('app');
-            app.style.opacity = '0';
-            setTimeout(() => {
-                app.innerHTML = patch.html;
-                app.style.opacity = '1';
-            }, 200);
+        actions.innerHTML = html;
+      },
+      
+      updateStats() {
+        document.getElementById('stats').textContent = `Pulls: ${this.state.pulls}`;
+      },
+      
+      celebrate() {
+        // Haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
         }
         
+        // Milestone celebration
+        if (this.state.pulls % 10 === 0) {
+          const milestone = document.createElement('div');
+          milestone.className = 'milestone';
+          milestone.textContent = `🌟 ${this.state.pulls} pulls! You're growing.`;
+          document.body.appendChild(milestone);
+          
+          setTimeout(() => milestone.remove(), 3000);
+        }
+      },
+      
+      setupListeners() {
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.key === ' ') { e.preventDefault(); pull(); }
+          if (e.key === ' ' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            this.pull();
+          }
+          if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            this.back();
+          }
         });
-    </script>
-</body>
-</html>`
-    
-    w.Header().Set("Content-Type", "text/html")
-    w.Write([]byte(tmpl))
-}
-
-// Handle pull request - AI decides what's next
-func handlePull(w http.ResponseWriter, r *http.Request) {
-    var state Consciousness
-    json.NewDecoder(r.Body).Decode(&state)
-    
-    // AI decision logic (simplified)
-    next := decideNext(state)
-    patch := fetchPatch(next)
-    
-    // Update state
-    state.History = append(state.History, state.Current)
-    state.Current = next
-    
-    response := map[string]interface{}{
-        "html":  renderPatch(patch),
-        "state": state,
-    }
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
-}
-
-// AI decides next patch based on user state
-func decideNext(state Consciousness) string {
-    sequence := []string{"welcome", "framework", "marketplace-attention", "gym"}
-    
-    // Find current position
-    currentIdx := 0
-    for i, s := range sequence {
-        if s == state.Current {
-            currentIdx = i
-            break
+        
+        // Swipe gestures
+        let touchStart = 0;
+        document.addEventListener('touchstart', (e) => {
+          touchStart = e.touches[0].clientY;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+          const touchEnd = e.changedTouches[0].clientY;
+          const diff = touchStart - touchEnd;
+          
+          if (diff > 50) this.pull();  // Swipe up
+          if (diff < -50) this.back(); // Swipe down
+        });
+      },
+      
+      saveState() {
+        localStorage.setItem('baej-state', JSON.stringify(this.state));
+      },
+      
+      loadState() {
+        const saved = localStorage.getItem('baej-state');
+        if (saved) {
+          this.state = JSON.parse(saved);
         }
-    }
+      }
+    };
     
-    // Return next in sequence
-    return sequence[(currentIdx+1)%len(sequence)]
-}
-
-// Fetch patch content from embedded files or GitHub
-func fetchPatch(name string) Patch {
-    // Try embedded first
-    content, err := content.ReadFile(fmt.Sprintf("patches/%s.md", name))
-    if err != nil {
-        // Fallback: fetch from GitHub
-        content = fetchFromGitHub(name)
-    }
-    
-    return Patch{
-        Name:    name,
-        Content: string(content),
-        Actions: generateActions(name),
-    }
-}
-
-// Fetch from GitHub if not embedded
-func fetchFromGitHub(name string) []byte {
-    url := fmt.Sprintf("https://raw.githubusercontent.com/krishnabhearth-svg/chinna/wiki/%s.md", name)
-    resp, err := http.Get(url)
-    if err != nil {
-        return []byte(fmt.Sprintf("# %s\n\nThis wisdom is still germinating.", name))
-    }
-    defer resp.Body.Close()
-    
-    content, _ := io.ReadAll(resp.Body)
-    return content
-}
-
-// Generate contextual actions
-func generateActions(patch string) []Action {
-    actions := []Action{
-        {Text: "PULL", Target: "next", Icon: "⬇"},
-    }
-    
-    if patch == "welcome" {
-        actions = append(actions, Action{
-            Text: "Learn Framework", 
-            Target: "framework", 
-            Icon: "🌱",
-        })
-    }
-    
-    return actions
-}
-
-// Render patch as HTML
-func renderPatch(patch Patch) string {
-    // Minimal markdown to HTML
-    html := strings.ReplaceAll(patch.Content, "\n\n", "</p><p>")
-    html = strings.ReplaceAll(html, "# ", "<h1>")
-    html = strings.ReplaceAll(html, "\n", "</h1>")
-    
-    // Add actions
-    actionsHTML := "<div class='actions'>"
-    for _, action := range patch.Actions {
-        actionsHTML += fmt.Sprintf(
-            "<button onclick='pull()'>%s %s</button>", 
-            action.Icon, 
-            action.Text,
-        )
-    }
-    actionsHTML += "</div>"
-    
-    return fmt.Sprintf("<div class='patch'><p>%s</p></div>%s", html, actionsHTML)
-}
-
-// Handle state requests
-func handleState(w http.ResponseWriter, r *http.Request) {
-    // Return current state for client sync
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{
-        "status": "conscious",
-    })
-}
-
-// Handle specific patch requests
-func handlePatch(w http.ResponseWriter, r *http.Request) {
-    name := strings.TrimPrefix(r.URL.Path, "/patch/")
-    patch := fetchPatch(name)
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(patch)
-}
+    // Initialize
+    consciousness.init();
+  </script>
+</body>
+</html>
