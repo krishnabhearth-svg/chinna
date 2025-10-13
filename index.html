@@ -1,488 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-  <!-- Put this in <head> -->
-<script async src="https://cse.google.com/cse.js?cx=CX_GOES_HERE"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BA-EJ • Pull Wisdom</title>
+<meta name="description" content="A pull-based, grandmother-first, AI-free interactive book for liberation and wisdom.">
 <style>
-  :root{--bg:#fff;--fg:#0b1220;--muted:#6b7280;--accent:#236b4b}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--fg); margin:0}
-  .search-bar{max-width:920px;margin:18px auto;display:flex;gap:8px;padding:0 12px;align-items:center}
-  input[type="search"]{flex:1;padding:12px 14px;border-radius:8px;border:1px solid #e5e7eb;font-size:16px}
-  button.pull{background:var(--accent);color:white;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
-  .meta{max-width:920px;margin:8px auto;color:var(--muted);font-size:13px;padding:0 12px}
-  .results-wrap{max-width:920px;margin:14px auto;padding:0 12px}
-  /* Layout variants */
-  .layout-article .gcse-searchresults-only .gsc-webResult { display:block }
-  .layout-gallery .gsc-resultsRoot .gsc-webResult { display:inline-block; width:48%; vertical-align:top; box-sizing:border-box; padding:8px }
-  .layout-cards .gsc-webResult { display:block; border-radius:10px; padding:10px; box-shadow:0 6px 18px rgba(2,6,23,0.06); margin:10px 0; }
-  .suggestions{max-width:920px;margin:10px auto;display:flex;gap:8px;flex-wrap:wrap;padding:0 12px}
-  .chip{background:#f3f4f6;padding:8px 10px;border-radius:999px;font-size:13px;color:var(--muted);cursor:pointer}
-  @media (max-width:640px){ .layout-gallery .gsc-webResult{width:100%} }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg: #fff; --text: #000; --accent: #000; --border: #ddd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #000; --text: #fff; --accent: #fff; --border: #333; }
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+  }
+  #app { padding: 2rem 1.5rem; height: calc(100vh - 140px); overflow-y: auto; max-width: 800px; margin: 0 auto; }
+  h1,h2,h3{ margin:1.2rem 0 0.8rem; }
+  p,li{ margin:0.8rem 0; }
+  pre{ background:var(--border); padding:1rem; border-radius:8px; overflow-x:auto; margin:1.2rem 0; font-family: monospace; }
+  code{ font-family: monospace; background: var(--border); padding:0.2em 0.4em; border-radius:4px; }
+  ul,ol{ padding-left:1.5rem; }
+  .dynamic-btn{ display:block; width:100%; padding:1rem; margin:0.8rem 0; background:var(--accent); color:var(--bg); border:none; text-align:left; border-radius:8px; font-size:1.1rem; cursor:pointer; }
+  .dynamic-btn:hover{ opacity:0.9; }
+  .nav{ position:fixed; bottom:1.5rem; right:1.5rem; display:flex; gap:1rem; }
+  .btn{ width:70px; height:70px; border-radius:50%; border:none; background:var(--accent); color:var(--bg); font-size:1.4rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+  .aux{ position:fixed; top:1.5rem; right:1.5rem; display:flex; gap:0.8rem;}
+  .aux-btn{ width:44px; height:44px; border-radius:50%; border:2px solid var(--text); background:var(--bg); color:var(--text); font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .loading, .error{text-align:center; padding:2rem;}
+  .progress{ position:fixed; top:1.5rem; left:50%; transform:translateX(-50%); background:var(--bg); color:var(--text); padding:0.3rem 0.8rem; border-radius:20px; font-size:0.9rem; z-index:100;}
+  #searchInput{ width:100%; padding:0.6rem 1rem; margin-bottom:1rem; border-radius:8px; border:1px solid var(--border);}
 </style>
-
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BA-EJ • Pull Wisdom</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: #000;
-      color: #fff;
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    #app {
-      max-width: 800px;
-      padding: 2rem;
-      opacity: 0;
-      animation: fadeIn 0.5s forwards;
-    }
-    
-    @keyframes fadeIn { to { opacity: 1; } }
-    
-    h1 { 
-      font-size: clamp(2rem, 6vw, 4rem); 
-      margin-bottom: 2rem; 
-      line-height: 1.2;
-    }
-    
-    p { 
-      font-size: clamp(1.1rem, 2.5vw, 1.4rem); 
-      line-height: 1.8; 
-      margin-bottom: 1.5rem; 
-    }
-    
-    .actions {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      z-index: 100;
-    }
-    
-    button {
-      background: #fff;
-      color: #000;
-      border: none;
-      padding: 1rem 2rem;
-      font-size: 1.1rem;
-      border-radius: 50px;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(255,255,255,0.3);
-    }
-    
-    button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,255,255,0.4); }
-    button:active { transform: scale(0.95); }
-    
-    .pull-btn {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      font-size: 2rem;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .stats {
-      position: fixed;
-      top: 1rem;
-      left: 1rem;
-      font-size: 0.9rem;
-      opacity: 0.7;
-    }
-    
-    .milestone {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #fff;
-      color: #000;
-      padding: 2rem 3rem;
-      border-radius: 1rem;
-      font-size: 1.5rem;
-      font-weight: bold;
-      animation: pop 0.3s;
-      box-shadow: 0 10px 40px rgba(255,255,255,0.5);
-    }
-    
-    @keyframes pop {
-      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-    }
-    
-    @media (max-width: 768px) {
-      #app { padding: 1.5rem; }
-      .actions { bottom: 1rem; right: 1rem; }
-      .pull-btn { width: 70px; height: 70px; }
-    }
-  </style>
 </head>
 <body>
-  <div class="stats" id="stats">Pulls: 0</div>
-  <div id="app">
-    <h1>🌱 Welcome to BA-EJ</h1>
-    <p>This is a <strong>pull-based</strong> book. No scrolling. No overwhelm.</p>
-    <p>Press <strong>PULL</strong> when you're ready to receive wisdom.</p>
-    <p>Designed for grandmothers. Built for everyone.</p>
-  </div>
-  
-  <div class="actions">
-    <button class="pull-btn" onclick="consciousness.pull()" title="Pull Next Wisdom">⬇</button>
-  </div>
-
-<!-- Put this in <body> where you want UI -->
-<div class="search-bar" role="search" aria-label="BA.EJ Pull Search">
-  <input id="pullInput" type="search" placeholder="Pull what you want — e.g. 'sustainable potting guide'">
-  <button class="pull" id="pullBtn">PULL</button>
-</div>
-<div class="meta" id="meta">Adaptive mode: <strong id="mode">default</strong> · Pulls: <span id="pullCount">0</span></div>
-
-<div class="suggestions" id="suggestions"></div>
-
-<div class="results-wrap" id="resultsWrap">
-  <!-- GCSE will render here -->
-  <div class="gcse-searchresults-only"></div>
+<div class="progress" id="progress">Home • 0 pulls</div>
+<div id="app">
+  <input type="text" id="searchInput" placeholder="Search content..." />
+  <h1>🌱 Pull Wisdom</h1>
+  <p>Welcome to BA-EJ — the living book that grows with you.</p>
+  <p>Press <strong>PULL</strong> to begin your journey.</p>
 </div>
 
+<div class="nav">
+  <button id="back-btn" class="btn" title="Back">❮</button>
+  <button id="pull-btn" class="btn" title="Pull Next">⬇</button>
+</div>
+
+<div class="aux">
+  <button class="aux-btn" title="Grandmother Mode" id="gym-btn">👵</button>
+  <button class="aux-btn" title="Language">🌐</button>
+  <a href="https://github.com/krishnabhearth-svg/chinna" target="_blank" class="aux-btn" title="Contribute">🐙</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
 <script>
-/* --- minimal BA·EJ Pull Engine (client-side) --- */
-/* Replace CX in the head script tag with your real CSE cx ID (already done above). */
-
-(function(){
-  const pullInput = document.getElementById('pullInput');
-  const pullBtn = document.getElementById('pullBtn');
-  const modeEl = document.getElementById('mode');
-  const pullCountEl = document.getElementById('pullCount');
-  const suggestionsEl = document.getElementById('suggestions');
-  const resultsWrap = document.getElementById('resultsWrap');
-
-  const STORAGE_KEY = 'baej_pull_cache_v1';
-  let cache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-
-  // tiny keyword → tag map (extend as needed)
-  const KEY_TAGS = [
-    {k:['how to','guide','tutorial','learn','explain','what is'],'t':'learning'},
-    {k:['image','photo','gallery','visual','diagram','map'],'t':'visual'},
-    {k:['buy','price','shop','order','vendor','sell'],'t':'commerce'},
-    {k:['connect','community','meet','join','volunteer','contribute'],'t':'connect'},
-    {k:['research','paper','study','journal'],'t':'research'},
-    {k:['video','watch','lecture','talk'],'t':'video'},
-    {k:['recipe','cook','potting','seed','soil'],'t':'hands-on'}
-  ];
-
-  function tagIntent(q){
-    const s=q.toLowerCase();
-    // exact phrase -> tag
-    for(const group of KEY_TAGS){
-      for(const kw of group.k) if(s.includes(kw)) return group.t;
-    }
-    // fallback: short heuristics
-    if(s.split(' ').length<=2) return 'lookup';
-    return 'learning';
+class BA_EJ_Engine{
+  constructor(){
+    this.username = "krishnabhearth-svg";
+    this.repo = "chinna";
+    this.history = ['Home'];
+    this.pullCount = 0;
+    this.cache = new Map();
+    this.indexData = []; // for search
+    this.setupUI();
   }
 
-  function savePull(q, tag){
-    const entry = {q, tag, ts: Date.now()};
-    cache.unshift(entry);
-    if(cache.length>200) cache.pop();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
-    pullCountEl.textContent = cache.length;
-  }
-
-  function adaptUIFor(tag){
-    // remove old layout classes
-    document.body.classList.remove('layout-article','layout-gallery','layout-cards','layout-default');
-    switch(tag){
-      case 'visual': document.body.classList.add('layout-gallery'); modeEl.textContent='visual (gallery)'; break;
-      case 'commerce': document.body.classList.add('layout-cards'); modeEl.textContent='commerce (cards)'; break;
-      case 'connect': document.body.classList.add('layout-cards'); modeEl.textContent='connect (cards)'; break;
-      case 'research': document.body.classList.add('layout-article'); modeEl.textContent='research (article)'; break;
-      case 'hands-on': document.body.classList.add('layout-article'); modeEl.textContent='hands-on (guide)'; break;
-      default: document.body.classList.add('layout-article'); modeEl.textContent='learning (article)'; break;
-    }
-  }
-
-  function showSuggestions(q, tag){
-    suggestionsEl.innerHTML='';
-    const seeds = [
-      q,
-      q + ' examples',
-      q + ' step by step',
-      'best ' + q,
-      q + ' community'
-    ];
-    seeds.slice(0,5).forEach(s=>{
-      const c = document.createElement('div');
-      c.className='chip';
-      c.textContent=s;
-      c.onclick=()=>{ pullInput.value=s; handleSearch(s) };
-      suggestionsEl.appendChild(c);
+  setupUI(){
+    document.getElementById('pull-btn').onclick = ()=>this.pullNext();
+    document.getElementById('back-btn').onclick = ()=>this.goBack();
+    document.getElementById('gym-btn').onclick = ()=>this.toggleGyM();
+    document.getElementById('searchInput').addEventListener('input', (e)=>this.searchContent(e));
+    document.addEventListener('keydown', e=>{
+      if(e.key===' '|| e.key==='ArrowDown'){ e.preventDefault(); this.pullNext(); }
+      if(e.key==='ArrowUp'){ e.preventDefault(); this.goBack(); }
     });
   }
 
-  // handle search: tag, save, adapt UI, trigger CSE search
-  function handleSearch(q){
-    if(!q || !q.trim()) return;
-    const tag = tagIntent(q);
-    savePull(q, tag);
-    adaptUIFor(tag);
-    showSuggestions(q, tag);
-    // trigger the google cse search controller by setting the input value of the embedded widget
-    // the standard CSE creates a search input — we can programmatically use the global function if available:
-    try{
-      if(window.google && google.search && google.search.cse && google.search.cse.element){
-        const element = google.search.cse.element.getElement('gsc-i-id1');
-        // above may be undefined depending on CSE build; fallback to calling execute
-        const el = google.search.cse.element.getElement('searchresults-only0') // sometimes exists
-        google.search.cse.element.getElement('searchresults-only0')?.execute(q);
-      }
-    }catch(e){
-      // fallback: try to set the visible input for CSE (if it exists in the DOM)
-      const cseInput = document.querySelector('input.gsc-input') || document.querySelector('.gsc-input');
-      if(cseInput){ cseInput.value = q; cseInput.dispatchEvent(new Event('change')); cseInput.form?.submit(); }
-    }
-
-    // Also call CSE via the global callback if available
-    try {
-      if(window.__gcse && typeof window.__gcse === 'function') {
-        // if your CSE uses a callback, call it
-        __gcse.q && __gcse.q(q);
-      }
-    } catch(e){ /* ignore */ }
+  async pullNext(){
+    const current = this.history[this.history.length-1];
+    const next = this.getNextPatch(current);
+    await this.loadPatch(next);
   }
 
-  // attach events
-  pullBtn.addEventListener('click', ()=> handleSearch(pullInput.value));
-  pullInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); handleSearch(pullInput.value); } });
+  goBack(){
+    if(this.history.length>1){
+      this.history.pop();
+      const prev = this.history[this.history.length-1];
+      this.renderFromCache(prev);
+    }
+  }
 
-  // expose for debugging/splitting into file later
-  window.baejPull = {
-    handleSearch, tagIntent, cache,
-    clearCache: ()=>{ cache=[]; localStorage.removeItem(STORAGE_KEY); pullCountEl.textContent='0' }
-  };
+  getNextPatch(current){
+    const order=['Home','Framework-Beej','Marketplace-Attention','Marketplace-Intimacy'];
+    const idx = order.indexOf(current);
+    return idx!==-1 && idx<order.length-1 ? order[idx+1] : 'Home';
+  }
 
-  // init UI state
-  pullCountEl.textContent = cache.length;
-  if(cache.length>0){ const last = cache[0]; adaptUIFor(last.tag); }
-})();
-</script>
-
-  
-  <script>
-    // BA-EJ Consciousness Core
-    const consciousness = {
-      state: {
-        current: 'welcome',
-        history: [],
-        pulls: 0,
-        cache: {}
-      },
-      
-      patches: [
-        'welcome',
-        'framework', 
-        'marketplace-attention',
-        'gym'
-      ],
-      
-      async init() {
-        this.loadState();
-        this.setupListeners();
-        if (this.state.current !== 'welcome') {
-          await this.render();
-        }
-      },
-      
-      async pull() {
-        this.state.pulls++;
-        this.state.history.push(this.state.current);
-        
-        // Decide next patch
-        const currentIdx = this.patches.indexOf(this.state.current);
-        const nextIdx = (currentIdx + 1) % this.patches.length;
-        this.state.current = this.patches[nextIdx];
-        
-        // Render
-        await this.render();
-        
-        // Celebrate
-        this.celebrate();
-        
-        // Save state
-        this.saveState();
-      },
-      
-      async back() {
-        if (this.state.history.length > 0) {
-          this.state.current = this.state.history.pop();
-          await this.render();
-          this.saveState();
-        }
-      },
-      
-      async render() {
-        const app = document.getElementById('app');
-        const content = await this.fetchContent(this.state.current);
-        
-        app.style.opacity = '0';
-        
-        setTimeout(() => {
-          app.innerHTML = content;
-          app.style.opacity = '1';
-          this.updateButtons();
-          this.updateStats();
-        }, 200);
-      },
-      
-      async fetchContent(patch) {
-        // Check cache first
-        if (this.state.cache[patch]) {
-          return this.state.cache[patch];
-        }
-        
-        // Try to fetch from patches folder
-        try {
-          const response = await fetch(`patches/${patch}.html`);
-          if (response.ok) {
-            const content = await response.text();
-            this.state.cache[patch] = content;
-            return content;
-          }
-        } catch (e) {
-          console.log('Patch not found, using fallback');
-        }
-        
-        // Fallback content
-        return this.getFallback(patch);
-      },
-      
-      getFallback(patch) {
-        const fallbacks = {
-          welcome: `
-            <h1>🌱 Welcome to BA-EJ</h1>
-            <p>This is a <strong>pull-based</strong> book. No scrolling. No overwhelm.</p>
-            <p>Press <strong>PULL</strong> when you're ready to receive wisdom.</p>
-            <p>Designed for grandmothers. Built for everyone.</p>
-          `,
-          framework: `
-            <h1>🌾 The BA-EJ Framework</h1>
-            <p><strong>B</strong>eej (बीज) - The Seed. Every marketplace begins with a need.</p>
-            <p><strong>Bhoj</strong>y (भोज्य) - The Nourishment. What is being exchanged?</p>
-            <p><strong>Bhaj</strong>i (बाजी) - The Marketplace. Where does exchange happen?</p>
-            <p><strong>Baz</strong>i (बाज़ी) - The Game. Who wins? What emerges?</p>
-          `,
-          'marketplace-attention': `
-            <h1>👁️ The Attention Marketplace</h1>
-            <p><strong>Beej:</strong> Your need for information and connection.</p>
-            <p><strong>Bhojy:</strong> You trade your focus and time for content.</p>
-            <p><strong>Bhaji:</strong> Social media platforms, algorithms, advertisers.</p>
-            <p><strong>Bazi:</strong> Tech companies extract $1.3 trillion. You get distraction.</p>
-            <p><em>Question: Is this exchange nourishing you?</em></p>
-          `,
-          gym: `
-            <h1>👵 GyM - Grandmother Mode</h1>
-            <p>If a grandmother can't use it, we haven't built it right.</p>
-            <p><strong>GyM</strong> = <strong>G</strong>rand<strong>M</strong>other</p>
-            <p><strong>GyM</strong> = <strong>G</strong>ood <strong>M</strong>orning (fresh wisdom)</p>
-            <p><strong>GyM</strong> = <strong>G</strong>rand <strong>y</strong>outh <strong>M</strong>entorship</p>
-            <p>Large buttons. Simple words. Clear actions. Patience.</p>
-          `
-        };
-        
-        return fallbacks[patch] || `<h1>${patch}</h1><p>This wisdom is germinating. Pull again soon.</p>`;
-      },
-      
-      updateButtons() {
-        const actions = document.querySelector('.actions');
-        
-        // Always show pull button
-        let html = '<button class="pull-btn" onclick="consciousness.pull()" title="Pull Next">⬇</button>';
-        
-        // Show back button if history exists
-        if (this.state.history.length > 0) {
-          html += '<button onclick="consciousness.back()" title="Go Back">❮</button>';
-        }
-        
-        actions.innerHTML = html;
-      },
-      
-      updateStats() {
-        document.getElementById('stats').textContent = `Pulls: ${this.state.pulls}`;
-      },
-      
-      celebrate() {
-        // Haptic feedback
-        if (navigator.vibrate) {
-          navigator.vibrate(50);
-        }
-        
-        // Milestone celebration
-        if (this.state.pulls % 10 === 0) {
-          const milestone = document.createElement('div');
-          milestone.className = 'milestone';
-          milestone.textContent = `🌟 ${this.state.pulls} pulls! You're growing.`;
-          document.body.appendChild(milestone);
-          
-          setTimeout(() => milestone.remove(), 3000);
-        }
-      },
-      
-      setupListeners() {
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-          if (e.key === ' ' || e.key === 'ArrowDown') {
-            e.preventDefault();
-            this.pull();
-          }
-          if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            this.back();
-          }
-        });
-        
-        // Swipe gestures
-        let touchStart = 0;
-        document.addEventListener('touchstart', (e) => {
-          touchStart = e.touches[0].clientY;
-        });
-        
-        document.addEventListener('touchend', (e) => {
-          const touchEnd = e.changedTouches[0].clientY;
-          const diff = touchStart - touchEnd;
-          
-          if (diff > 50) this.pull();  // Swipe up
-          if (diff < -50) this.back(); // Swipe down
-        });
-      },
-      
-      saveState() {
-        localStorage.setItem('baej-state', JSON.stringify(this.state));
-      },
-      
-      loadState() {
-        const saved = localStorage.getItem('baej-state');
-        if (saved) {
-          this.state = JSON.parse(saved);
-        }
+  async loadPatch(pageName){
+    this.showLoading();
+    try{
+      if(this.cache.has(pageName)){
+        this.renderFromCache(pageName);
+        return;
       }
-    };
-    
-    // Initialize
-    consciousness.init();
-  </script>
+      const url = `https://raw.githubusercontent.com/${this.username}/${this.repo}/wiki/${encodeURIComponent(pageName)}.md`;
+      const response = await fetch(url);
+      if(!response.ok) throw new Error(`Page "${pageName}" not found`);
+      const markdown = await response.text();
+      const html = this.parseMarkdown(markdown);
+      this.cache.set(pageName, html);
+      this.history.push(pageName);
+      this.pullCount++;
+      this.indexData.push({title: pageName, content: markdown});
+      this.updateProgress();
+      this.render(html);
+    }catch(err){
+      this.showError(err.message);
+    }
+  }
+
+  renderFromCache(pageName){
+    const html = this.cache.get(pageName);
+    const idx = this.history.indexOf(pageName);
+    this.history = this.history.slice(0, idx+1);
+    this.pullCount = Math.max(0,this.history.length-1);
+    this.updateProgress();
+    this.render(html);
+  }
+
+  parseMarkdown(md){
+    md=md.replace(/```(\w*)\n([\s\S]*?)```/g,(m,lang,code)=>`<pre><code${lang?` class="language-${lang}"`:''}>${this.escapeHtml(code.trim())}</code></pre>`);
+    md=md.replace(/`([^`]+)`/g,'<code>$1</code>');
+    md=md.replace(/^### (.*$)/gm,'<h3>$1</h3>');
+    md=md.replace(/^## (.*$)/gm,'<h2>$1</h2>');
+    md=md.replace(/^# (.*$)/gm,'<h1>$1</h1>');
+    md=md.replace(/^\s*-\s+(.*$)/gm,'<li>$1</li>');
+    md=md.replace(/(<li>.*<\/li>)/gs,'<ul>$1</ul>');
+    md=md.replace(/^(?!<[hul]|$)(.*$)/gm,'<p>$1</p>');
+    md=md.replace(/\[([^\]]+)\]\(action:([^\)]+)\)/g,'<button class="dynamic-btn" data-action="$2">$1</button>');
+    return md;
+  }
+
+  escapeHtml(text){
+    const div=document.createElement('div'); div.textContent=text; return div.innerHTML;
+  }
+
+  render(html){
+    document.getElementById('app').innerHTML=`
+      <input type="text" id="searchInput" placeholder="Search content..." />
+      ${html}`;
+    document.getElementById('searchInput').addEventListener('input', (e)=>this.searchContent(e));
+    document.querySelectorAll('.dynamic-btn').forEach(btn=>{
+      btn.onclick=()=>{ const action=btn.dataset.action; if(action.startsWith('pull:')) this.loadPatch(action.split(':')[1]); };
+    });
+  }
+
+  showLoading(){ document.getElementById('app').innerHTML='<div class="loading">Pulling wisdom...</div>'; }
+  showError(msg){ document.getElementById('app').innerHTML=`<div class="error">⚠️ ${msg}</div>`; }
+  updateProgress(){ const current=this.history[this.history.length-1]; document.getElementById('progress').textContent=`${current} • ${this.pullCount} pulls`; }
+  toggleGyM(){ document.body.classList.toggle('gym-mode'); alert('👵 GyM Mode toggled!'); }
+
+  searchContent(e){
+    const query=e.target.value.trim();
+    if(!query){ this.renderFromCache(this.history[this.history.length-1]); return; }
+    const fuse = new Fuse(this.indexData,{keys:['title','content'], includeMatches:true, threshold:0.4});
+    const results = fuse.search(query);
+    let html = `<h2>Search Results for "${query}"</h2>`;
+    if(results.length===0){ html+='<p>No results found.</p>'; }
+    else results.forEach(r=>{
+      html+=`<h3>${r.item.title}</h3><p>${r.item.content.substring(0,200)}...</p>`;
+    });
+    document.getElementById('app').innerHTML=html;
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{ window.baEJ=new BA_EJ_Engine(); });
+</script>
 </body>
 </html>
