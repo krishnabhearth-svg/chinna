@@ -1,6 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+  <!-- Put this in <head> -->
+<script async src="https://cse.google.com/cse.js?cx=CX_GOES_HERE"></script>
+<style>
+  :root{--bg:#fff;--fg:#0b1220;--muted:#6b7280;--accent:#236b4b}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--fg); margin:0}
+  .search-bar{max-width:920px;margin:18px auto;display:flex;gap:8px;padding:0 12px;align-items:center}
+  input[type="search"]{flex:1;padding:12px 14px;border-radius:8px;border:1px solid #e5e7eb;font-size:16px}
+  button.pull{background:var(--accent);color:white;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
+  .meta{max-width:920px;margin:8px auto;color:var(--muted);font-size:13px;padding:0 12px}
+  .results-wrap{max-width:920px;margin:14px auto;padding:0 12px}
+  /* Layout variants */
+  .layout-article .gcse-searchresults-only .gsc-webResult { display:block }
+  .layout-gallery .gsc-resultsRoot .gsc-webResult { display:inline-block; width:48%; vertical-align:top; box-sizing:border-box; padding:8px }
+  .layout-cards .gsc-webResult { display:block; border-radius:10px; padding:10px; box-shadow:0 6px 18px rgba(2,6,23,0.06); margin:10px 0; }
+  .suggestions{max-width:920px;margin:10px auto;display:flex;gap:8px;flex-wrap:wrap;padding:0 12px}
+  .chip{background:#f3f4f6;padding:8px 10px;border-radius:999px;font-size:13px;color:var(--muted);cursor:pointer}
+  @media (max-width:640px){ .layout-gallery .gsc-webResult{width:100%} }
+</style>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BA-EJ • Pull Wisdom</title>
@@ -124,6 +144,144 @@
     <button class="pull-btn" onclick="consciousness.pull()" title="Pull Next Wisdom">⬇</button>
   </div>
 
+<!-- Put this in <body> where you want UI -->
+<div class="search-bar" role="search" aria-label="BA.EJ Pull Search">
+  <input id="pullInput" type="search" placeholder="Pull what you want — e.g. 'sustainable potting guide'">
+  <button class="pull" id="pullBtn">PULL</button>
+</div>
+<div class="meta" id="meta">Adaptive mode: <strong id="mode">default</strong> · Pulls: <span id="pullCount">0</span></div>
+
+<div class="suggestions" id="suggestions"></div>
+
+<div class="results-wrap" id="resultsWrap">
+  <!-- GCSE will render here -->
+  <div class="gcse-searchresults-only"></div>
+</div>
+
+<script>
+/* --- minimal BA·EJ Pull Engine (client-side) --- */
+/* Replace CX in the head script tag with your real CSE cx ID (already done above). */
+
+(function(){
+  const pullInput = document.getElementById('pullInput');
+  const pullBtn = document.getElementById('pullBtn');
+  const modeEl = document.getElementById('mode');
+  const pullCountEl = document.getElementById('pullCount');
+  const suggestionsEl = document.getElementById('suggestions');
+  const resultsWrap = document.getElementById('resultsWrap');
+
+  const STORAGE_KEY = 'baej_pull_cache_v1';
+  let cache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+  // tiny keyword → tag map (extend as needed)
+  const KEY_TAGS = [
+    {k:['how to','guide','tutorial','learn','explain','what is'],'t':'learning'},
+    {k:['image','photo','gallery','visual','diagram','map'],'t':'visual'},
+    {k:['buy','price','shop','order','vendor','sell'],'t':'commerce'},
+    {k:['connect','community','meet','join','volunteer','contribute'],'t':'connect'},
+    {k:['research','paper','study','journal'],'t':'research'},
+    {k:['video','watch','lecture','talk'],'t':'video'},
+    {k:['recipe','cook','potting','seed','soil'],'t':'hands-on'}
+  ];
+
+  function tagIntent(q){
+    const s=q.toLowerCase();
+    // exact phrase -> tag
+    for(const group of KEY_TAGS){
+      for(const kw of group.k) if(s.includes(kw)) return group.t;
+    }
+    // fallback: short heuristics
+    if(s.split(' ').length<=2) return 'lookup';
+    return 'learning';
+  }
+
+  function savePull(q, tag){
+    const entry = {q, tag, ts: Date.now()};
+    cache.unshift(entry);
+    if(cache.length>200) cache.pop();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+    pullCountEl.textContent = cache.length;
+  }
+
+  function adaptUIFor(tag){
+    // remove old layout classes
+    document.body.classList.remove('layout-article','layout-gallery','layout-cards','layout-default');
+    switch(tag){
+      case 'visual': document.body.classList.add('layout-gallery'); modeEl.textContent='visual (gallery)'; break;
+      case 'commerce': document.body.classList.add('layout-cards'); modeEl.textContent='commerce (cards)'; break;
+      case 'connect': document.body.classList.add('layout-cards'); modeEl.textContent='connect (cards)'; break;
+      case 'research': document.body.classList.add('layout-article'); modeEl.textContent='research (article)'; break;
+      case 'hands-on': document.body.classList.add('layout-article'); modeEl.textContent='hands-on (guide)'; break;
+      default: document.body.classList.add('layout-article'); modeEl.textContent='learning (article)'; break;
+    }
+  }
+
+  function showSuggestions(q, tag){
+    suggestionsEl.innerHTML='';
+    const seeds = [
+      q,
+      q + ' examples',
+      q + ' step by step',
+      'best ' + q,
+      q + ' community'
+    ];
+    seeds.slice(0,5).forEach(s=>{
+      const c = document.createElement('div');
+      c.className='chip';
+      c.textContent=s;
+      c.onclick=()=>{ pullInput.value=s; handleSearch(s) };
+      suggestionsEl.appendChild(c);
+    });
+  }
+
+  // handle search: tag, save, adapt UI, trigger CSE search
+  function handleSearch(q){
+    if(!q || !q.trim()) return;
+    const tag = tagIntent(q);
+    savePull(q, tag);
+    adaptUIFor(tag);
+    showSuggestions(q, tag);
+    // trigger the google cse search controller by setting the input value of the embedded widget
+    // the standard CSE creates a search input — we can programmatically use the global function if available:
+    try{
+      if(window.google && google.search && google.search.cse && google.search.cse.element){
+        const element = google.search.cse.element.getElement('gsc-i-id1');
+        // above may be undefined depending on CSE build; fallback to calling execute
+        const el = google.search.cse.element.getElement('searchresults-only0') // sometimes exists
+        google.search.cse.element.getElement('searchresults-only0')?.execute(q);
+      }
+    }catch(e){
+      // fallback: try to set the visible input for CSE (if it exists in the DOM)
+      const cseInput = document.querySelector('input.gsc-input') || document.querySelector('.gsc-input');
+      if(cseInput){ cseInput.value = q; cseInput.dispatchEvent(new Event('change')); cseInput.form?.submit(); }
+    }
+
+    // Also call CSE via the global callback if available
+    try {
+      if(window.__gcse && typeof window.__gcse === 'function') {
+        // if your CSE uses a callback, call it
+        __gcse.q && __gcse.q(q);
+      }
+    } catch(e){ /* ignore */ }
+  }
+
+  // attach events
+  pullBtn.addEventListener('click', ()=> handleSearch(pullInput.value));
+  pullInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); handleSearch(pullInput.value); } });
+
+  // expose for debugging/splitting into file later
+  window.baejPull = {
+    handleSearch, tagIntent, cache,
+    clearCache: ()=>{ cache=[]; localStorage.removeItem(STORAGE_KEY); pullCountEl.textContent='0' }
+  };
+
+  // init UI state
+  pullCountEl.textContent = cache.length;
+  if(cache.length>0){ const last = cache[0]; adaptUIFor(last.tag); }
+})();
+</script>
+
+  
   <script>
     // BA-EJ Consciousness Core
     const consciousness = {
