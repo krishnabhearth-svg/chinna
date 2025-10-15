@@ -1,187 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BA-EJ • Pull Wisdom</title>
-<meta name="description" content="A pull-based, grandmother-first, AI-free interactive book for liberation and wisdom.">
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  :root {
-    --bg: #fff; --text: #000; --accent: #000; --border: #ddd;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #000; --text: #fff; --accent: #fff; --border: #333; }
-  }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    line-height: 1.6;
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-  }
-  #app { padding: 2rem 1.5rem; height: calc(100vh - 140px); overflow-y: auto; max-width: 800px; margin: 0 auto; }
-  h1,h2,h3{ margin:1.2rem 0 0.8rem; }
-  p,li{ margin:0.8rem 0; }
-  pre{ background:var(--border); padding:1rem; border-radius:8px; overflow-x:auto; margin:1.2rem 0; font-family: monospace; }
-  code{ font-family: monospace; background: var(--border); padding:0.2em 0.4em; border-radius:4px; }
-  ul,ol{ padding-left:1.5rem; }
-  .dynamic-btn{ display:block; width:100%; padding:1rem; margin:0.8rem 0; background:var(--accent); color:var(--bg); border:none; text-align:left; border-radius:8px; font-size:1.1rem; cursor:pointer; }
-  .dynamic-btn:hover{ opacity:0.9; }
-  .nav{ position:fixed; bottom:1.5rem; right:1.5rem; display:flex; gap:1rem; }
-  .btn{ width:70px; height:70px; border-radius:50%; border:none; background:var(--accent); color:var(--bg); font-size:1.4rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.15);}
-  .aux{ position:fixed; top:1.5rem; right:1.5rem; display:flex; gap:0.8rem;}
-  .aux-btn{ width:44px; height:44px; border-radius:50%; border:2px solid var(--text); background:var(--bg); color:var(--text); font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;}
-  .loading, .error{text-align:center; padding:2rem;}
-  .progress{ position:fixed; top:1.5rem; left:50%; transform:translateX(-50%); background:var(--bg); color:var(--text); padding:0.3rem 0.8rem; border-radius:20px; font-size:0.9rem; z-index:100;}
-  #searchInput{ width:100%; padding:0.6rem 1rem; margin-bottom:1rem; border-radius:8px; border:1px solid var(--border);}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BA-EJ • Pull Wisdom</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #fff; color: #000;
+      height: 100vh; width: 100vw;
+      overflow: hidden;
+    }
+    #app {
+      padding: 2rem;
+      height: calc(100vh - 140px);
+      overflow-y: auto;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .nav {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      display: flex;
+      gap: 1rem;
+    }
+    .btn {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: none;
+      background: #000;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .aux {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      gap: 0.8rem;
+    }
+    .aux-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 2px solid #000;
+      background: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    .dynamic-btn {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      margin: 0.8rem 0;
+      background: #000;
+      color: #fff;
+      border: none;
+      text-align: left;
+      border-radius: 8px;
+      font-size: 1.1rem;
+    }
+  </style>
 </head>
 <body>
-<div class="progress" id="progress">Home • 0 pulls</div>
-<div id="app">
-  <input type="text" id="searchInput" placeholder="Search content..." />
-  <h1>🌱 Pull Wisdom</h1>
-  <p>Welcome to BA-EJ — the living book that grows with you.</p>
-  <p>Press <strong>PULL</strong> to begin your journey.</p>
-</div>
+  <div id="app">
+    <h1>🌱 Pull Wisdom</h1>
+    <p>Welcome to BA-EJ — the living book that grows with you.</p>
+    <p>Press <strong>PULL</strong> to begin your journey.</p>
+  </div>
 
-<div class="nav">
-  <button id="back-btn" class="btn" title="Back">❮</button>
-  <button id="pull-btn" class="btn" title="Pull Next">⬇</button>
-</div>
+  <div class="nav">
+    <button id="back-btn" class="btn" title="Back">❮</button>
+    <button id="pull-btn" class="btn" title="Pull Next">⬇</button>
+  </div>
 
-<div class="aux">
-  <button class="aux-btn" title="Grandmother Mode" id="gym-btn">👵</button>
-  <button class="aux-btn" title="Language">🌐</button>
-  <a href="https://github.com/krishnabhearth-svg/chinna" target="_blank" class="aux-btn" title="Contribute">🐙</a>
-</div>
+  <div class="aux">
+    <button class="aux-btn" title="Grandmother Mode">👵</button>
+    <button class="aux-btn" title="Language">🌐</button>
+    <a href="https://github.com/krishnabhearth-svg/ba-ej" target="_blank" class="aux-btn" title="Contribute">🐙</a>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
-<script>
-class BA_EJ_Engine{
-  constructor(){
-    this.username = "krishnabhearth-svg";
-    this.repo = "chinna";
-    this.history = ['Home'];
-    this.pullCount = 0;
-    this.cache = new Map();
-    this.indexData = []; // for search
-    this.setupUI();
-  }
-
-  setupUI(){
-    document.getElementById('pull-btn').onclick = ()=>this.pullNext();
-    document.getElementById('back-btn').onclick = ()=>this.goBack();
-    document.getElementById('gym-btn').onclick = ()=>this.toggleGyM();
-    document.getElementById('searchInput').addEventListener('input', (e)=>this.searchContent(e));
-    document.addEventListener('keydown', e=>{
-      if(e.key===' '|| e.key==='ArrowDown'){ e.preventDefault(); this.pullNext(); }
-      if(e.key==='ArrowUp'){ e.preventDefault(); this.goBack(); }
-    });
-  }
-
-  async pullNext(){
-    const current = this.history[this.history.length-1];
-    const next = this.getNextPatch(current);
-    await this.loadPatch(next);
-  }
-
-  goBack(){
-    if(this.history.length>1){
-      this.history.pop();
-      const prev = this.history[this.history.length-1];
-      this.renderFromCache(prev);
-    }
-  }
-
-  getNextPatch(current){
-    const order=['Home','Framework-Beej','Marketplace-Attention','Marketplace-Intimacy'];
-    const idx = order.indexOf(current);
-    return idx!==-1 && idx<order.length-1 ? order[idx+1] : 'Home';
-  }
-
-  async loadPatch(pageName){
-    this.showLoading();
-    try{
-      if(this.cache.has(pageName)){
-        this.renderFromCache(pageName);
-        return;
-      }
-      const url = `https://raw.githubusercontent.com/${this.username}/${this.repo}/wiki/${encodeURIComponent(pageName)}.md`;
-      const response = await fetch(url);
-      if(!response.ok) throw new Error(`Page "${pageName}" not found`);
-      const markdown = await response.text();
-      const html = this.parseMarkdown(markdown);
-      this.cache.set(pageName, html);
-      this.history.push(pageName);
-      this.pullCount++;
-      this.indexData.push({title: pageName, content: markdown});
-      this.updateProgress();
-      this.render(html);
-    }catch(err){
-      this.showError(err.message);
-    }
-  }
-
-  renderFromCache(pageName){
-    const html = this.cache.get(pageName);
-    const idx = this.history.indexOf(pageName);
-    this.history = this.history.slice(0, idx+1);
-    this.pullCount = Math.max(0,this.history.length-1);
-    this.updateProgress();
-    this.render(html);
-  }
-
-  parseMarkdown(md){
-    md=md.replace(/```(\w*)\n([\s\S]*?)```/g,(m,lang,code)=>`<pre><code${lang?` class="language-${lang}"`:''}>${this.escapeHtml(code.trim())}</code></pre>`);
-    md=md.replace(/`([^`]+)`/g,'<code>$1</code>');
-    md=md.replace(/^### (.*$)/gm,'<h3>$1</h3>');
-    md=md.replace(/^## (.*$)/gm,'<h2>$1</h2>');
-    md=md.replace(/^# (.*$)/gm,'<h1>$1</h1>');
-    md=md.replace(/^\s*-\s+(.*$)/gm,'<li>$1</li>');
-    md=md.replace(/(<li>.*<\/li>)/gs,'<ul>$1</ul>');
-    md=md.replace(/^(?!<[hul]|$)(.*$)/gm,'<p>$1</p>');
-    md=md.replace(/\[([^\]]+)\]\(action:([^\)]+)\)/g,'<button class="dynamic-btn" data-action="$2">$1</button>');
-    return md;
-  }
-
-  escapeHtml(text){
-    const div=document.createElement('div'); div.textContent=text; return div.innerHTML;
-  }
-
-  render(html){
-    document.getElementById('app').innerHTML=`
-      <input type="text" id="searchInput" placeholder="Search content..." />
-      ${html}`;
-    document.getElementById('searchInput').addEventListener('input', (e)=>this.searchContent(e));
-    document.querySelectorAll('.dynamic-btn').forEach(btn=>{
-      btn.onclick=()=>{ const action=btn.dataset.action; if(action.startsWith('pull:')) this.loadPatch(action.split(':')[1]); };
-    });
-  }
-
-  showLoading(){ document.getElementById('app').innerHTML='<div class="loading">Pulling wisdom...</div>'; }
-  showError(msg){ document.getElementById('app').innerHTML=`<div class="error">⚠️ ${msg}</div>`; }
-  updateProgress(){ const current=this.history[this.history.length-1]; document.getElementById('progress').textContent=`${current} • ${this.pullCount} pulls`; }
-  toggleGyM(){ document.body.classList.toggle('gym-mode'); alert('👵 GyM Mode toggled!'); }
-
-  searchContent(e){
-    const query=e.target.value.trim();
-    if(!query){ this.renderFromCache(this.history[this.history.length-1]); return; }
-    const fuse = new Fuse(this.indexData,{keys:['title','content'], includeMatches:true, threshold:0.4});
-    const results = fuse.search(query);
-    let html = `<h2>Search Results for "${query}"</h2>`;
-    if(results.length===0){ html+='<p>No results found.</p>'; }
-    else results.forEach(r=>{
-      html+=`<h3>${r.item.title}</h3><p>${r.item.content.substring(0,200)}...</p>`;
-    });
-    document.getElementById('app').innerHTML=html;
-  }
-}
-
-document.addEventListener('DOMContentLoaded',()=>{ window.baEJ=new BA_EJ_Engine(); });
-</script>
+  <script src="scripts/pullEngine.js"></script>
 </body>
 </html>
