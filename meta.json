@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "version": "1.0",
+    "total_words": 1024,
+    "languages": ["en", "hi", "zh"]
+  },
+  "words": [
+    {
+      "id": "komute",
+      "root": "ko/mute",
+      "meanings": {
+        "en": "Community + Communication + Commute in harmony",
+        "hi": "सह-यात्रा",
+        "zh": "共行"
+      },
+      "tags": ["harmony", "movement", "park-work", "community"],
+      "y_depth": 3,
+      "gym_level": 2,
+      "patch": "patches/komute.html",
+      "vector": [0.82, -0.41, 0.67, 0.93, -0.22]
+    },
+    {
+      "id": "void",
+      "root": "void",
+      "meanings": {
+        "en": "Clarity through emptiness; potential through non-attachment",
+        "hi": "शून्यता",
+        "zh": "空"
+      },
+      "tags": ["silence", "potential", "neti-neti", "liberation"],
+      "y_depth": 5,
+      "gym_level": 3,
+      "patch": "patches/void.html",
+      "vector": [-0.89, 0.95, -0.77, 0.21, -0.66]
+    }
+  ],
+  "marketplaces": [
+    {
+      "id": "attention",
+      "name": "Attention Marketplace",
+      "beej": "Need for information and connection",
+      "bhojy": "Your time and mental energy",
+      "bhaji": "Algorithms control visibility",
+      "bazi": "Tech companies profit; you get distraction",
+      "patch": "patches/komute.html",
+      "gym_level": 2
+    }
+  ],
+  "characters": [
+    {
+      "id": "kishan",
+      "name": "Kishan",
+      "role": "The Architect",
+      "signature": "What seed was planted here?",
+      "avatar": "👤",
+      "color": "#4A90E2"
+    }
+  ]
+}
